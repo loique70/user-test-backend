@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateAuthDto } from './dto/create-user.dto';
 import { PrismaService } from 'prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -7,6 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import { jwtSecret } from 'src/utils/constants';
 import { v4 as uuidv4 } from 'uuid';
 import { MailService } from 'src/mail/mail.service';
+import { Request, Response } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -49,7 +55,7 @@ export class AuthService {
     };
   }
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, res: Response) {
     const { email, password } = loginDto;
 
     const foundUser = await this.prismaService.users.findUnique({
@@ -73,7 +79,16 @@ export class AuthService {
       email: foundUser.email,
     });
 
-    return { token };
+    if (!token) throw new ForbiddenException();
+
+    res.cookie('token', token);
+
+    return res.send({ message: 'Logged in succefully' });
+  }
+
+  async logout(req: Request, res: Response) {
+    res.clearCookie('token');
+    return res.send({ message: 'Logout successful' });
   }
 
   async hashPassword(password: string) {
@@ -104,5 +119,22 @@ export class AuthService {
     });
 
     return { message: 'Account successfully activated' };
+  }
+
+  async getUserInfo(token: string): Promise<CreateAuthDto> {
+    try {
+      const decoded = this.jwtService.verify(token, { secret: jwtSecret });
+      const userId = decoded.id;
+
+      const user = await this.prismaService.users.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) throw new BadRequestException('User not found');
+
+      return user;
+    } catch (error) {
+      throw new BadRequestException('Invalid token');
+    }
   }
 }

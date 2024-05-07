@@ -21,3 +21,15 @@ model Users {
     updatedAt DateTime @updatedAt
     deleted Boolean @default(false)
 }
+
+
+model Customers{
+  id Int @id @default(autoincrement())
+   lastName String 
+   firstName String 
+    email String @unique
+    phone String
+    poste String
+    isActive Boolean
+    deleted Boolean @default(false)
+}

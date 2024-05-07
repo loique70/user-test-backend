@@ -3,9 +3,9 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
-  Delete,
+  Req,
+  Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-user.dto';
@@ -21,10 +21,16 @@ export class AuthController {
   }
 
   @Post('login')
-  login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  login(@Body() loginDto: LoginDto, @Res() res) {
+    return this.authService.login(loginDto, res);
   }
 
+  @Get('logout')
+  logout(@Req() req, @Res() res) {
+    return this.authService.logout(req, res);
+  }
+
+  
   @Get('activate/:link')
   async activate(@Param('link') link: string) {
     return this.authService.activateAccount(link);
